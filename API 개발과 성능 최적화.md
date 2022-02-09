@@ -793,11 +793,71 @@ private Map<Long, List<OrderItemQueryDto>> findOrderItemMap(List<Long> orderIds)
 
 ## API 개발 고급 -실무 필수 최적화 
 
+### OSIV와 성능 최적화
+
+- Open Session In View : 하이버네이트
+- Open EntityManager In View : JPA 
+- 관례상 OSIV로 부른다.
 
 
 
+**OSIV ON**
+
+![image](https://user-images.githubusercontent.com/77170611/153251121-08d10f89-5022-4294-9d13-2acd4b3ef38b.png)
+
+- **spring.jpa.open-in-view: true 기본값**
+
+OSIV 전략은 트랜잭션 시작처럼 최초 데이터베이스 커넥션 시작 시점부터 API응답이 끝날 때 까지 
+
+영속성 컨텍스트와 데이터베이스 커넥션을 유지한다. 그래서 View Template이나 API컨트롤러에서 
+
+지연로딩이 가능했다.
+
+지연 로딩은 영속성 컨텍스트가 살아있어야 가능하고, 영속성 컨텍스트는 기본적으로 데이터베이스
+
+커넥션을 유지한다.
+
+하지만, 너무 오랜시간 데이터베이스 커넥션 리소스를 사용하기 때문에 실시간 트래픽이 중요한 경우
+
+애플리케이션에서는 커넥션이 모자랄 수 있다. -> 장애 발생
+
+ex) 컨트롤러에서 외부 API를 호출하면 외부 API 대기 시간 만큼 커넥션 리소스를 반환하지 못하고 
+
+유지해야한다.
 
 
 
+**OSIV OFF**
 
+![image](https://user-images.githubusercontent.com/77170611/153251913-a67c2647-2a97-4638-a333-e0e95c268db1.png)
+
+- **spring.jpa.open-in-view: false OSIV 종료**
+
+OSIV를 끄면 트랜잭션을 종료할 때 영속성 컨텍스트를 닫고, 데이터베이스 커넥션도 반환한다. 따라서
+
+커낵션 리소스를 낭비하지 않는다. 
+
+OSIV를 끄면 모든 지연로딩을 트랜잭션 안에서 처리해야 한다. 따라서 지금까지 작성한 많은 지연로딩코드를 트랜잭션 안에 넣어야 한다. 그리고 View Template에서 지연로딩이 동작하지 않는다.
+
+결론적으로 트랜잭션이 끝나기 전에 지연로딩을 강제로 호출해 두어야 한다.
+
+
+
+**커멘드와 쿼리 분리**
+
+실무에서 OSIV를 끈 상태로 복잡성을 관리하는 방법은 Command와 Query를 분리하는 것이다.
+
+OrderService
+
+- OrderService: 핵심 비지니스 로직
+- OrderQueryService: 화면이나 API에 맞춘 서비스(주로 읽기 전용 트랜잭션 사용)
+
+이렇게, 관심사를 명확하게 분리
+
+보통 서비스 계층에서 트랜잭션을 유지한다. 두 서비스 모두 트랜잭션을 유지하면서 지연로딩을 사용할 수 있다.
+
+
+
+- 고객의 실시간 API : OSIV OFF
+- ADMIN처럼 커넥션을 많이 사용하지 않는 경우: OSIV ON
 
