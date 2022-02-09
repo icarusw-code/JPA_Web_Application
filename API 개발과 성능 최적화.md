@@ -181,14 +181,87 @@ static class MemberDto {
 ```
 
 - 엔티티를 DTO로 변환해서 반환한다.
+
 - 엔티티가 변해도 API 스펙이 변경되지 않는다.
+
 - 추가로 Result 클래스로 컬렉션을 감싸서 향후 필요한 필드를 추가할 수 있다.
 
+  
+
+## API 개발 고급 - 지연로딩과 성능 최적화 
+
+### V1: 엔티티를 직접 노출
+
+- 간단한 주문 조회
+
+```java
+@RestController
+@RequiredArgsConstructor
+public class OrderSimpleApiController{
+    private final OrderRepository orderRepository;
+    
+    @GetMapping("/api/v1/simple-orders")
+    public List<Order> ordersV1{
+        List<Order> all = orderRepository.findAllByString(new OrderSearch());
+        for(Order order : all){
+            order.getMember().getName(); // Lazy 강제 초기화
+            order.getDelivery().getAddress(); // Lazy 강제 초기화
+        }
+        return all;
+    }
+}
+```
+
+- 엔티티를 직접 노출하는 것은 좋지 않다.
+- order -> member 와 order -> address는 지연 로딩이다. 따라서 실제 엔티티 대신 프록시가 존재
+- jackson 라이브러리는 기본적으로 이 프록시 객체를 json으로 어떻게 생성해야 하는지 모름 -> 예외 발생
+- Hibernate5Module을 스프링 빈에 등록하면 해결된다.
 
 
 
+### V2: 엔티티를 DTO로 변환
+
+```java
+@GetMapping("api/v2/simple-orders")
+public List<SimpleOrderDto> ordersV2(){
+    List<Order> orders = orderRepository.findAll();
+    
+    List<SimpleOrderDto> result = orders.stream()
+        	.map(o -> new SimpleorderDto(o))
+        	.collect(toList());
+    
+    return result;
+}
+
+@Data
+static class SimpleOrderDto{
+    
+    private Long orderId;
+    private String name;
+    private LocalDateTime orderDate;
+    private OrderStatus orderStatus;
+    private Address address;
+    
+    public SimpleOrderDto(Order order) {
+        orderId = order.getId();
+        name = order.getMember().getName();
+        orderDate = order.getOrderDate();
+        orderStatus = order.getStatus(); 
+        address = order.getDelivery().getAddress();
+    }
+    
+}
+```
+
+- 엔티티를 DTO로 변환하는 일반적인 방법이다.
+- 쿼리가 총 1 + N + N번 실행 된다.
+  - order 조회 1번
+  - order -> member 지연 로딩 조회 N번
+  - order -> delivery 지연 로딩 조회 N번
 
 
+
+### V3: 엔티티를 DTO로 변환 - 페치 조인 최적화 
 
 
 
