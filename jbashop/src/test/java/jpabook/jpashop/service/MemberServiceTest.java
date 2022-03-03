@@ -19,18 +19,18 @@ public class MemberServiceTest {
     @Autowired MemberService memberService;
     @Autowired MemberRepository memberRepository;
 
-    @Test
-    public void 회원가입() throws Exception {
-        //given
-        Member member = new Member();
-        member.setName("권은비");
-
-        //when
-        Long saveId = memberService.join(member);
-
-        //then
-        assertEquals(member, memberRepository.findOne(saveId));
-    }
+//    @Test
+//    public void 회원가입() throws Exception {
+//        //given
+//        Member member = new Member();
+//        member.setName("권은비");
+//
+//        //when
+//        Long saveId = memberService.join(member);
+//
+//        //then
+//        assertEquals(member, memberRepository.findOne(saveId));
+//    }
 
     @Test(expected = IllegalStateException.class)
     public void 중복_회원_예외() throws Exception {

@@ -1,5 +1,9 @@
 package jpabook.jpashop.controller;
 
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
 import jpabook.jpashop.domain.item.Book;
 import jpabook.jpashop.domain.item.Item;
 import jpabook.jpashop.service.ItemService;
@@ -13,6 +17,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 
 import java.util.List;
 
+@Api(tags = {"API 이름"})
 @Controller
 @RequiredArgsConstructor
 public class ItemController {
@@ -38,6 +43,11 @@ public class ItemController {
         return "redirect:/";
     }
 
+    @ApiOperation(value = "resource 제목", notes = "resource 설명")
+    @ApiResponses({
+            @ApiResponse(code = 200, message = "API 정상 작동"),
+            @ApiResponse(code = 500, message = "서버 에러")
+    })
     @GetMapping("/items")
     public String list(Model model) {
         List<Item> items = itemService.findItems();

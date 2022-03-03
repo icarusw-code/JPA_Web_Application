@@ -1,5 +1,6 @@
 package jpabook.jpashop.domain.item;
 
+import io.swagger.annotations.ApiModelProperty;
 import jpabook.jpashop.domain.Category;
 import jpabook.jpashop.exception.NotEnoughStockException;
 import lombok.Getter;
